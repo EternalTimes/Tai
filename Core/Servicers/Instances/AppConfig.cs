@@ -24,9 +24,7 @@ namespace Core.Servicers.Instances
 
         public AppConfig()
         {
-            fileName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory,
-                "Data",
-                "AppConfig.json");
+            fileName = Path.Combine(FileHelper.GetRootDirectory(),"Data","AppConfig.json");
         }
         public void Load()
         {

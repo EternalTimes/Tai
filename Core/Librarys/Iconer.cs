@@ -45,8 +45,9 @@ namespace Core.Librarys
         public static string Get(string processname, string desc, bool isRelativePath = true)
         {
             string iconName = FromatIconFileName(processname, desc);
-            string iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory,
-                         "AppIcons", iconName);
+            string iconPath = Path.Combine(FileHelper.GetRootDirectory(), "AppIcons", iconName);
+            ///原本代码如下
+            ///string iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "AppIcons", iconName);
             if (!File.Exists(iconPath))
             {
                 return "pack://application:,,,/Tai;component/Resources/Icons/defaultIcon.png";
@@ -54,8 +55,7 @@ namespace Core.Librarys
 
             if (isRelativePath)
             {
-                return Path.Combine(
-                         "AppIcons", iconName);
+                return Path.Combine("AppIcons", iconName);
             }
             return iconPath;
         }
@@ -73,11 +73,11 @@ namespace Core.Librarys
             {
                 string iconName = FromatIconFileName(processname, desc);
 
-                string iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory,
-                             "AppIcons", iconName);
+                string iconPath = Path.Combine(FileHelper.GetRootDirectory(), "AppIcons", iconName);
+                ///原本代码如下
+                ///string iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "AppIcons", iconName);
 
-                string relativePath = Path.Combine(
-                             "AppIcons", iconName);
+                string relativePath = Path.Combine("AppIcons", iconName);
 
                 if (isCheck && File.Exists(iconPath))
                 {
