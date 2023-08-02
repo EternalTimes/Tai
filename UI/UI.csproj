@@ -581,7 +581,9 @@
     <Resource Include="Resources\Emoji\%288%29.png" />
     <Resource Include="Resources\Emoji\%289%29.png" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <WCFMetadata Include="Connected Services\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PathMap>$(MSBuildProjectDirectory)=Tai</PathMap>
