@@ -90,7 +90,7 @@
                                 <Run Text="讨论 "/><Hyperlink Command="{Binding OpenURL}" CommandParameter="https://github.com/Planshit/Tai/discussions">https://github.com/Planshit/Tai/discussions</Hyperlink>
                         </TextBlock>
                         <TextBlock Margin="0,15,0,0">
-                                <Run Text="打包为UWP并修改 "/><Hyperlink Command="{Binding OpenURL}" CommandParameter="https://github.com/Planshit/Tai">https://github.com/EternalTimes/Tai/tree/pack</Hyperlink>
+                                <Run Text="打包为UWP并修改 "/><Hyperlink Command="{Binding OpenURL}" CommandParameter="https://github.com/EternalTimes/Tai/tree/pack">https://github.com/EternalTimes/Tai/tree/pack</Hyperlink>
                         </TextBlock>
                         <TextBlock Margin="0,15,0,0" Foreground="Black" FontWeight="Bold" FontSize="16">
                                 <Run Text="外部资源声明 "/>
