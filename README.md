@@ -3,13 +3,11 @@
 
 <img src="index.jpg" width=600 />
 
-需要注意的是，Tai 所统计的 `时长` 并不是指软件的存活时间或网站从打开到关闭的这段时间，而是从软件或网站获得焦点开始到失去焦点前这段时间。
-
 ## 开始使用
 
 #### 环境
 
-使用之前，你的电脑可能需要安装 [.NET Framework](https://dotnet.microsoft.com/en-us/download/dotnet-framework) `4.6.1` 或更高的版本（一般Win10以上的系统不需要安装）。如果在启动 Tai 时没反应，请点击左侧链接下载安装。
+使用之前，你的电脑可能需要安装 [.NET Framework](https://dotnet.microsoft.com/en-us/download/dotnet-framework) `4.8` 或更高的版本（一般Win10以上的系统不需要安装）。如果在启动 Tai 时没反应，请点击左侧链接下载安装。
 
 > P.S. UWP打包版可能需要4.8以上版本
 
@@ -37,6 +35,10 @@
 
 帮助你了解自己把时间花在了什么地方，从而更好地做一些计划。或者，为了每周回顾自己的摸鱼成果。~~工作只是换取薪酬，摸鱼才是赚钱。~~
 
+#### 应用白名单
+
+支持仅统计白名单内的软件，在设置 > 行为中可以启用此功能。
+
 #### 关联进程
 
 如果你希望在多屏工作时将其他屏幕所使用的软件同时记录使用时长，可以在设置中将相应的软件进程添加到一个关联列表中。添加完成后，只要使用了关联列表的其中一个软件，就会同步更新使用时长到列表里的其他软件上，但前提是其他软件需要正处于运行中（即使在后台或者没有焦点都行）。一个软件只能关联一次，不能重复与其他软件关联。
@@ -51,12 +53,20 @@
 
 Tai 使用不加密 `SQLite` 数据库将统计数据存储在本地 `用户文档\Tai\Data\data.db` 中。可以在设置中将统计的数据以 `.xlsx` 和 `.csv` 两种文件格式导出。
 
+#### 睡眠监测
+
+Tai 能够一定程度地发现用户离开电脑从而停止统计，也可以在设置 > 行为中停用此功能以实现不间断统计。
+
 #### 联网和隐私
 
 除了检查更新/升级软件时（需要主动在设置中检查更新）之外完全没有其他网络请求。Tai 并不会收集和上传你的任何信息。
 
-##  ♥ + 👻
+##  ❤️ + 👻
 
 开源软件的更新动力来源于用户的支持，无论是精神还是经济上，如果 Tai 给你带去了帮助请给开发者一些鼓励把~
 
-[关于作者 →](https://github.com/noberumotto/noberumotto/blob/master/about.md)
+#### 来杯☕
+
+<img src="https://github.com/noberumotto/noberumotto/raw/master/wechat.jpg" width="256px"/> <img src="https://github.com/noberumotto/noberumotto/raw/master/alipay.jpg" width="256px" />
+
+[关于&联系 →](https://github.com/noberumotto/noberumotto/blob/master/about.md)
