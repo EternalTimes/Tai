@@ -17,7 +17,7 @@ namespace Core.Servicers.Interfaces
         /// <param name="processName_">进程名称</param>
         /// <param name="duration_">时长（秒）</param>
         /// <param name="startDateTime_">记录开始时间</param>
-        void SaveAppDuration(string processName_, int duration_, DateTime startDateTime_);
+        void UpdateAppDuration(string processName_, int duration_, DateTime startDateTime_);
 
         /// <summary>
         /// 获取今天的数据
@@ -125,7 +125,10 @@ namespace Core.Servicers.Interfaces
         /// <param name="year"></param>
         /// <returns></returns>
         double[] GetMonthTotalData(DateTime year);
-
-
+        /// <summary>
+        /// 清空所有统计数据
+        /// </summary>
+        /// <param name="appID_">应用ID</param>
+        void Clear(int appID_);
     }
 }

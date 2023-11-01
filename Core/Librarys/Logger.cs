@@ -16,7 +16,7 @@ namespace Core.Librarys
 {
     public static class Logger
     {
-        private static readonly int threshold = 50;
+        private const int threshold = 50;
 
         private static readonly object writeLock = new object();
 
@@ -31,7 +31,6 @@ namespace Core.Librarys
             dispatcherTimer.Interval = new TimeSpan(0, 5, 0);
             dispatcherTimer.Tick += DispatcherTimer_Tick;
             dispatcherTimer.Start();
-
         }
 
         private static void DispatcherTimer_Tick(object sender, EventArgs e)
@@ -100,23 +99,23 @@ namespace Core.Librarys
 
                 if (!File.Exists(loggerName))
                 {
-                    List<string> clientInfo = new List<string>();
+                    List<string> clientInfo = new List<string>(5);
 
                     //  记录客户端信息
 
 
                     //  tai版本号
                     clientInfo.Add(FromatItem("Core Version", Assembly.GetExecutingAssembly().GetName().Version.ToString()));
-                    clientInfo.Add(FromatItem("OS Name", GetWindowsVersionName()));
+                    clientInfo.Add(FromatItem("OS Name", SystemCommon.GetWindowsVersionName()));
                     clientInfo.Add(FromatItem("Computer Type", GetComputerType()));
                     clientInfo.Add(FromatItem("Screen", GetScreenSize()));
                     clientInfo.Add("\r\n++++++++++++++++++++++++++++++++++++++++++++++++++\r\n\r\n");
 
-                    File.WriteAllText(loggerName, string.Join("\r\n", clientInfo.ToArray()));
+                    File.WriteAllText(loggerName, string.Join("\r\n", clientInfo));
                 }
 
 
-                File.AppendAllText(loggerName, string.Join("", loggers.ToArray()));
+                File.AppendAllText(loggerName, string.Join(string.Empty, loggers));
 
                 loggers.Clear();
             }
@@ -126,29 +125,6 @@ namespace Core.Librarys
         private static string GetScreenSize()
         {
             return SystemInformation.VirtualScreen.Width + "*" + SystemInformation.VirtualScreen.Height;
-        }
-        private static string GetWindowsVersionName()
-        {
-            string name = string.Empty;
-            try
-            {
-                ManagementObjectSearcher managementObjectSearcher = new ManagementObjectSearcher("SELECT * FROM Win32_OperatingSystem");
-                foreach (ManagementObject obj in managementObjectSearcher.Get())
-                {
-                    name = obj["Name"].ToString();
-                }
-
-                if (!string.IsNullOrEmpty(name) && name.IndexOf("|") != -1)
-                {
-                    name = name.Split('|')[0];
-                }
-            }
-            catch
-            {
-                return "[无法获取系统版本]";
-            }
-
-            return name;
         }
 
         /// <summary>

@@ -46,6 +46,11 @@ namespace Core.Models.Config
         /// </summary>
         [Config(Options = "概览|统计|详细|分类", Name = "启动页", Description = "设置打开主界面时显示的页面", Group = "基础")]
         public int StartPage { get; set; } = 0;
+        [Config(Name = "启动软件时显示主界面", Description = "在开机自启动时此选项无效", Group = "基础")]
+        /// <summary>
+        /// 启动软件时显示主界面
+        /// </summary>
+        public bool IsStartupShowMainWindow { get; set; } = true;
         /// <summary>
         /// 概览页最为频繁显示条数
         /// </summary>
@@ -60,7 +65,7 @@ namespace Core.Models.Config
         /// <summary>
         /// 是否启用网站记录功能
         /// </summary>
-        [Config(Name = "网站浏览统计", Description = "统计浏览器的网站访问数据，支持：Google Chrome、MSEdge、Vivaldi", Group = "功能", IsBeta = true)]
+        [Config(Name = "网站浏览统计", Description = "统计浏览器的网站访问数据，支持：Google Chrome、MSEdge或任何能够安装Chrome拓展的浏览器。在浏览器拓展管理中启用开发模式，选择加载已解压插件，选择Tai浏览器插件。", Group = "功能", IsBeta = true)]
         public bool IsWebEnabled { get; set; } = false;
     }
 }

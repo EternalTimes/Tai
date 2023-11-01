@@ -92,8 +92,11 @@ namespace UI
         {
             //  核心服务
             services.AddSingleton<IDatabase, Database>();
+            services.AddSingleton<IAppManager, AppManager>();
+            services.AddSingleton<IWindowManager, WindowManager>();
+            services.AddSingleton<IAppTimerServicer, AppTimerServicer>();
             services.AddSingleton<IAppObserver, AppObserver>();
-            services.AddSingleton<IBrowserObserver, BrowserObserver>();
+            services.AddSingleton<IWebServer, WebServer>();
             services.AddSingleton<IMain, Main>();
             services.AddSingleton<IData, Data>();
             services.AddSingleton<IWebData, WebData>();
@@ -105,6 +108,7 @@ namespace UI
             services.AddSingleton<IWebFilter, WebFilter>();
 
             //  UI服务
+            services.AddSingleton<IUIServicer, UIServicer>();
             services.AddSingleton<IAppContextMenuServicer, AppContextMenuServicer>();
             services.AddSingleton<IThemeServicer, ThemeServicer>();
             services.AddSingleton<IMainServicer, MainServicer>();
@@ -158,7 +162,16 @@ namespace UI
             }
 
             var main = serviceProvider.GetService<IMainServicer>();
-            main.Start();
+
+            bool isSelfStart = false;
+            if (e.Args.Length != 0)
+            {
+                if (e.Args[0].Equals("--selfStart"))
+                {
+                    isSelfStart = true;
+                }
+            }
+            main.Start(isSelfStart);
 
             //  创建保活窗口
             keepaliveWindow = new HideWindow();

@@ -1,5 +1,8 @@
 ﻿using Core.Enums;
+using Core.Event;
 using Core.Librarys;
+using Core.Librarys.Browser;
+using Core.Librarys.Browser.Favicon;
 using Core.Librarys.SQLite;
 using Core.Models;
 using Core.Models.Config;
@@ -9,10 +12,13 @@ using System;
 using System.Collections.Generic;
 using System.Data.Entity;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 using System.Windows.Threading;
@@ -22,14 +28,15 @@ namespace Core.Servicers.Instances
     public class Main : IMain
     {
         private readonly IAppObserver appObserver;
-        private readonly IBrowserObserver browserObserver;
         private readonly IData data;
         private readonly ISleepdiscover sleepdiscover;
         private readonly IAppConfig appConfig;
-        private readonly IDateTimeObserver dateTimeObserver;
         private readonly IAppData appData;
         private readonly ICategorys categories;
         private readonly IWebFilter _webFilter;
+        private readonly IAppTimerServicer _appTimer;
+        private readonly IWebServer _webServer;
+        private readonly IWebData _webData;
         //  忽略的进程
         private readonly string[] DefaultIgnoreProcess = new string[] {
             "Tai",
@@ -44,16 +51,6 @@ namespace Core.Servicers.Instances
             "dwm",
             "SystemSettingsAdminFlows"
         };
-
-        /// <summary>
-        /// 当前聚焦进程
-        /// </summary>
-        private string activeProcess = null;
-
-        /// <summary>
-        /// 焦点开始时间
-        /// </summary>
-        private DateTime activeStartTime = DateTime.Now;
 
         /// <summary>
         /// 睡眠状态
@@ -85,6 +82,7 @@ namespace Core.Servicers.Instances
         private DateTime updadteAppDateTime_ = DateTime.Now.Date;
         //  已经更新过的应用列表
         private List<string> updatedAppList = new List<string>();
+        private List<string> _configProcessNameWhiteList, _configProcessRegexWhiteList;
         public Main(
             IAppObserver appObserver,
             IData data,
@@ -92,42 +90,32 @@ namespace Core.Servicers.Instances
             IAppConfig appConfig,
             IDateTimeObserver dateTimeObserver,
             IAppData appData, ICategorys categories,
-            IBrowserObserver browserObserver,
-            IWebFilter webFilter_)
+            IWebFilter webFilter_,
+            IAppTimerServicer appTimer_,
+            IWebServer webServer_,
+            IWebData webData_)
         {
             this.appObserver = appObserver;
             this.data = data;
             this.sleepdiscover = sleepdiscover;
             this.appConfig = appConfig;
-            this.dateTimeObserver = dateTimeObserver;
             this.appData = appData;
             this.categories = categories;
-            this.browserObserver = browserObserver;
             _webFilter = webFilter_;
+            _appTimer = appTimer_;
+            _webServer = webServer_;
+            _webData = webData_;
 
             IgnoreProcessCacheList = new List<string>();
             ConfigIgnoreProcessRegxList = new List<string>();
             ConfigIgnoreProcessList = new List<string>();
+            _configProcessNameWhiteList = new List<string>();
+            _configProcessRegexWhiteList = new List<string>();
 
-            appObserver.OnAppActive += AppObserver_OnAppActive;
             sleepdiscover.SleepStatusChanged += Sleepdiscover_SleepStatusChanged;
             appConfig.ConfigChanged += AppConfig_ConfigChanged;
-            dateTimeObserver.OnDateTimeChanging += DateTimeObserver_OnDateTimeChanging;
-        }
-
-
-
-        private void DateTimeObserver_OnDateTimeChanging(object sender, DateTime time)
-        {
-            Logger.Info("[time changed] status:" + sleepStatus + ",process:" + activeProcess + ",start:" + activeStartTime.ToString() + ",end:" + DateTime.Now.ToString() + ",time:" + time.ToString());
-            if (sleepStatus == SleepStatus.Wake)
-            {
-                UpdateTime();
-            }
-            else
-            {
-                activeStartTime = DateTime.Now;
-            }
+            _appTimer.OnAppDurationUpdated += _appTimer_OnAppDurationUpdated;
+            WebSocketEvent.OnWebLog += WebSocketEvent_OnWebLog;
         }
 
         private void AppConfig_ConfigChanged(ConfigModel oldConfig, ConfigModel newConfig)
@@ -139,6 +127,9 @@ namespace Core.Servicers.Instances
 
                 //  更新忽略规则
                 UpdateConfigIgnoreProcess();
+
+                //  更新白名单
+                UpdateConfigProcessWhiteList();
 
                 //  处理web记录功能启停
                 HandleWebServiceConfig();
@@ -172,11 +163,7 @@ namespace Core.Servicers.Instances
             appConfig.Load();
             config = appConfig.GetConfig();
             UpdateConfigIgnoreProcess();
-
-
-
-            //  启动睡眠监测
-            sleepdiscover.Start();
+            UpdateConfigProcessWhiteList();
 
             //  初始化过滤器
             _webFilter.Init();
@@ -188,21 +175,24 @@ namespace Core.Servicers.Instances
         }
         public void Start()
         {
-            activeStartTime = DateTime.Now;
-            activeProcess = null;
-
-            dateTimeObserver.Start();
+            //  appTimer必须比Observer先启动*
+            _appTimer.Start();
             appObserver.Start();
-
             if (config.General.IsWebEnabled)
             {
-                browserObserver.Start();
+                _webServer.Start();
+            }
+            if (config.Behavior.IsSleepWatch)
+            {
+                //  启动睡眠监测
+                sleepdiscover.Start();
             }
         }
         public void Stop()
         {
-            dateTimeObserver.Stop();
             appObserver.Stop();
+            _appTimer.Stop();
+            _webServer.Stop();
         }
         public void Exit()
         {
@@ -232,6 +222,19 @@ namespace Core.Servicers.Instances
             ConfigIgnoreProcessRegxList = config.Behavior.IgnoreProcessList.Where(m => IsRegex(m)).ToList();
         }
 
+        private void UpdateConfigProcessWhiteList()
+        {
+            if (config == null)
+            {
+                return;
+            }
+            _configProcessNameWhiteList.Clear();
+            _configProcessRegexWhiteList.Clear();
+
+            _configProcessNameWhiteList = config.Behavior.ProcessWhiteList.Where(m => !IsRegex(m)).ToList();
+            _configProcessRegexWhiteList = config.Behavior.ProcessWhiteList.Where(m => IsRegex(m)).ToList();
+        }
+
         private bool IsRegex(string str)
         {
             return Regex.IsMatch(str, @"[\.|\*|\?|\{|\\|\[|\^|\|]");
@@ -241,22 +244,27 @@ namespace Core.Servicers.Instances
         {
             this.sleepStatus = sleepStatus;
 
-            Logger.Info($"[{sleepStatus}] process:{activeProcess},start:{activeStartTime}");
+            Logger.Info($"[{sleepStatus}]");
             if (sleepStatus == SleepStatus.Sleep)
             {
                 //  进入睡眠状态
                 Debug.WriteLine("进入睡眠状态");
 
+                //  通知sokcet客户端
+                _webServer?.SendMsg("sleep");
                 //  停止服务
                 Stop();
 
                 //  更新时间
-                UpdateTime();
+                UpdateAppDuration();
             }
             else
             {
                 //  从睡眠状态唤醒
                 Debug.WriteLine("从睡眠状态唤醒");
+
+                _webServer?.SendMsg("wake");
+
                 Start();
             }
         }
@@ -289,6 +297,32 @@ namespace Core.Servicers.Instances
                     IgnoreProcessCacheList.Add(processName);
                     return false;
                 }
+            }
+
+            //  应用白名单过滤
+            if (config.Behavior.IsWhiteList && config.Behavior.ProcessWhiteList.Count > 0)
+            {
+                bool isWhite = false;
+                //  通过进程名称判断
+                if (_configProcessNameWhiteList.Contains(processName))
+                {
+                    isWhite = true;
+                }
+                else
+                {
+                    //  进程名称中匹配不到时尝试正则表达式
+                    foreach (string reg in _configProcessRegexWhiteList)
+                    {
+                        if (RegexHelper.IsMatch(processName, reg) || RegexHelper.IsMatch(file, reg))
+                        {
+                            isWhite = true;
+                            break;
+                        }
+                    }
+                }
+                //  白名单中找不到时不统计
+                Debug.WriteLine("白名单过滤结果：" + processName + " -> " + isWhite);
+                if (!isWhite) return false;
             }
 
             AppModel app = appData.GetApp(processName);
@@ -337,39 +371,6 @@ namespace Core.Servicers.Instances
             return true;
         }
 
-        private void AppObserver_OnAppActive(Models.AppObserver.AppObserverEventArgs args)
-        {
-            if (sleepStatus == SleepStatus.Sleep)
-            {
-                return;
-            }
-
-            string lastActiveProcess = activeProcess != null ? activeProcess.ToString() : "";
-
-            bool isCheck = IsCheckApp(args.ProcessName, args.Description, args.File);
-
-            Logger.Info($"Active[{isCheck}]:" + args.ProcessName + ",Last:" + lastActiveProcess + ",Time:" + activeStartTime.ToString());
-
-            if (activeProcess != args.ProcessName)
-            {
-                UpdateTime();
-            }
-
-            if (isCheck)
-            {
-                if (activeProcess == null)
-                {
-                    activeStartTime = DateTime.Now;
-                }
-                activeProcess = args.ProcessName;
-            }
-            else
-            {
-                activeProcess = null;
-            }
-
-        }
-
         private void HandleLinks(string processName, int seconds, DateTime time)
         {
             Task.Run(() =>
@@ -391,7 +392,7 @@ namespace Core.Servicers.Instances
                                     if (IsProcessRuning(linkProcess))
                                     {
                                         //  同步更新
-                                        data.SaveAppDuration(linkProcess, seconds, time);
+                                        data.UpdateAppDuration(linkProcess, seconds, time);
                                     }
 
                                 }
@@ -421,44 +422,6 @@ namespace Core.Servicers.Instances
         }
         #endregion
 
-        private void UpdateTime()
-        {
-            string app = activeProcess != null ? activeProcess.ToString() : "";
-
-            if (!string.IsNullOrEmpty(app))
-            {
-                var time = new DateTime(activeStartTime.Ticks);
-
-                //  更新计时
-                TimeSpan timeSpan = DateTime.Now - time;
-                int seconds = (int)timeSpan.TotalSeconds;
-
-                if (seconds > 3600)
-                {
-                    Logger.Warn($"计时异常。start:{time},process:{app},duration:{seconds},status:{sleepStatus}");
-                    activeStartTime = DateTime.Now;
-                    return;
-                }
-
-                //  如果是休眠状态要减去5分钟
-                if (sleepStatus == SleepStatus.Sleep)
-                {
-                    seconds -= 300;
-                }
-
-                if (seconds > 0)
-                {
-                    data.SaveAppDuration(app, seconds, time);
-
-                    //  关联进程更新
-                    HandleLinks(app, seconds, time);
-                }
-
-                activeStartTime = DateTime.Now;
-                OnUpdateTime?.Invoke(this, null);
-            }
-        }
-
         #region 处理网站数据记录配置项开关
         /// <summary>
         /// 处理网站数据记录配置项开关
@@ -472,14 +435,82 @@ namespace Core.Servicers.Instances
 
             if (config.General.IsWebEnabled)
             {
-                browserObserver.Start();
+                _webServer.Start();
             }
             else
             {
-                browserObserver.Stop();
+                _webServer.Stop();
             }
         }
         #endregion
 
+        private void _appTimer_OnAppDurationUpdated(object sender, Event.AppDurationUpdatedEventArgs e)
+        {
+            UpdateAppDuration(e);
+        }
+
+        private void UpdateAppDuration()
+        {
+            UpdateAppDuration(_appTimer.GetAppDuration());
+        }
+        private void UpdateAppDuration(AppDurationUpdatedEventArgs e)
+        {
+            if (e == null) return;
+
+            try
+            {
+                var app = e.App;
+                int duration = e.Duration;
+                DateTime startTime = e.ActiveTime;
+
+                bool isCheck = IsCheckApp(app.Process, app.Description, app.ExecutablePath);
+                if (isCheck)
+                {
+                    //  更新统计时长
+                    data.UpdateAppDuration(app.Process, duration, startTime);
+                    //  关联进程更新
+                    HandleLinks(app.Process, duration, startTime);
+                    OnUpdateTime?.Invoke(this, null);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error(ex.ToString());
+            }
+        }
+
+        #region 浏览器记录
+        private void WebSocketEvent_OnWebLog(Models.WebPage.NotifyWeb args)
+        {
+            try
+            {
+                if (_webFilter.IsIgnore(args.Url))
+                {
+                    Debug.WriteLine($"URL已被过滤，{args.Url}");
+                    return;
+                }
+
+                //  记录数据
+                var site = new Models.WebPage.Site()
+                {
+                    Url = args.Url,
+                    Title = args.Title
+                };
+
+                _webData.AddUrlBrowseTime(site, args.Duration, args.ActiveDateTime);
+
+                //  处理图标
+                Task.Run(async () =>
+                {
+                    string saveName = UrlHelper.GetName(args.Url) + DateTime.Now.ToString("yyyyMM") + ".ico";
+                    string path = await FaviconDownloader.DownloadAsync(args.Icon, saveName);
+                    _webData.UpdateUrlFavicon(site, path);
+                });
+            }catch(Exception ex)
+            {
+                Logger.Error(ex.ToString());
+            }
+        }
+        #endregion
     }
 }
