@@ -9,7 +9,7 @@
   <Identity
     Name="Tira.Tai"
     Publisher="CN=Tira"
-    Version="1.5.0.1" />
+    Version="1.5.0.4" />
 
   <Properties>
     <DisplayName>Tai</DisplayName>
