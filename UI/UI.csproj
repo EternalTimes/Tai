@@ -513,6 +513,10 @@
       <Project>{fa57023c-3399-45a4-a339-e453002bd878}</Project>
       <Name>Core</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Updater\Updater.csproj">
+      <Project>{7a2f2592-3079-441c-8704-e71ce75bc593}</Project>
+      <Name>Updater</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Resources\Icons\defaultIcon.png" />

@@ -95,7 +95,18 @@ namespace Updater
                           Info.IsPre = data.prerelease;
                           Info.Title = data.name;
                           Info.Version = data.tag_name;
-                          Info.DownloadUrl = data.assets[0].browser_download_url;
+
+                          // 匹配下载msixbundle；原始：Info.DownloadUrl = data.assets[0].browser_download_url;
+
+                          string targetAssetName = $"Tai-{Info.Version}-AnyCPU.msixbundle";
+                          foreach (var asset in data.assets)
+                          {
+                              if (asset.browser_download_url.EndsWith(targetAssetName))
+                              {
+                                  Info.DownloadUrl = asset.browser_download_url;
+                                  break;
+                              }
+                          }
                           Info.HtmlUrl = data.html_url;
                           return Info;
                       }

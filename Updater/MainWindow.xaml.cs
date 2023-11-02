@@ -4,6 +4,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Reflection;
+using System.Security.Principal;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -14,6 +16,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
+using System.Windows.Diagnostics;
 using System.Windows.Shapes;
 using static Updater.GithubRelease;
 
@@ -29,19 +32,19 @@ namespace Updater
         /// <summary>
         /// 新版本保存目录路径
         /// </summary>
-        private string SaveDir = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory);
+        private string SaveDir = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Tai", "Update");
         /// <summary>
         /// 新版本保存名字
         /// </summary>
-        private string SaveName = "update.zip";
+        private string SaveName = "update.msixbundle";
         /// <summary>
         /// 新版本下载路径
         /// </summary>
-        private string NewVersionZipURL;
+        private string NewVersionFileURL;
         /// <summary>
         /// 新版本发布页路径
         /// </summary>
-        private string NewVersionURL;
+        private string NewVersionPageURL;
         private MainModel mainModel;
         public MainWindow()
         {
@@ -58,7 +61,7 @@ namespace Updater
         {
             if (e.PropertyName == nameof(mainModel.Version))
             {
-                githubRelease = new GithubRelease("https://api.github.com/repos/planshit/tai/releases/latest", mainModel.Version);
+                githubRelease = new GithubRelease("https://api.github.com/repos/EternalTimes/tai/releases/latest", mainModel.Version);
 
                 Check();
             }
@@ -77,17 +80,16 @@ namespace Updater
             {
                 try
                 {
-                    //  确认保存目录
+                    // 确认保存目录
                     if (!Directory.Exists(SaveDir))
                     {
                         Directory.CreateDirectory(SaveDir);
                     }
 
-                    Uri uri = new Uri(NewVersionZipURL);
+                    Uri uri = new Uri(NewVersionFileURL);
                     HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(uri);
                     httpWebRequest.Timeout = 120 * 1000;
                     HttpWebResponse httpWebResponse = (HttpWebResponse)httpWebRequest.GetResponse();
-
 
                     long totalBytes = httpWebResponse.ContentLength;
 
@@ -99,7 +101,6 @@ namespace Updater
                     int osize = st.Read(by, 0, (int)by.Length);
                     while (osize > 0)
                     {
-
                         totalDownloadedByte = osize + totalDownloadedByte;
                         so.Write(by, 0, osize);
 
@@ -107,17 +108,16 @@ namespace Updater
 
                         //进度计算
                         double process = double.Parse(String.Format("{0:F}",
-                               ((double)totalDownloadedByte / (double)totalBytes * 100)));
+                                ((double)totalDownloadedByte / (double)totalBytes * 100)));
                         mainModel.ProcessValue = process;
                         //Debug.WriteLine(ProcessValue);
                     }
-                    //关闭资源
+                    // 关闭资源
                     httpWebResponse.Close();
                     so.Close();
                     st.Close();
 
                     return true;
-
                 }
                 catch (Exception ec)
                 {
@@ -127,44 +127,79 @@ namespace Updater
 
             if (res)
             {
-                //  准备更新
-                var process = Process.GetProcessesByName("Tai");
-                if (process != null && process.Length > 0)
+                // 检查管理员权限
+                if (IsAdmin())
                 {
-                    process[0].Kill();
-                }
-
-                SetStatus("下载完成，正在解压请勿关闭此窗口...");
-
-                string unpath = Directory.GetParent(AppDomain.CurrentDomain.BaseDirectory).Parent.FullName;
-
-                var unresult = await Task.Run(async () =>
-                  {
-                      await Task.Delay(3000);
-                      return Unzip.ExtractZipFile(System.IO.Path.Combine(SaveDir, SaveName), unpath);
-                  });
-                if (unresult)
-                {
-                    SetStatus("更新完成！", false);
-                    Process tai = new Process();
-                    ProcessStartInfo startInfo = new ProcessStartInfo(System.IO.Path.Combine(unpath, "Tai.exe"));
-                    tai.StartInfo = startInfo;
-                    tai.Start();
+                    InstallUpdate();
                 }
                 else
                 {
-                    SetStatus("解压文件时发生异常，请重试！通常情况可能是因为Tai主程序尚未退出。", false);
-                    UpdateBtn.Visibility = Visibility.Visible;
-
+                    // 提升权限到管理员权限
+                    RunAsAdmin();
                 }
             }
             else
             {
-                //下载发生异常
+                // 下载发生异常
                 SetStatus("下载时发生异常，请重试。", false);
                 UpdateBtn.Visibility = Visibility.Visible;
             }
         }
+
+        private void InstallUpdate()
+        {
+            string msixPath = System.IO.Path.Combine(SaveDir, SaveName);
+
+            // 启动 MSIX 安装程序
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = msixPath,
+                UseShellExecute = true
+            };
+
+            try
+            {
+                Process.Start(startInfo);
+                SetStatus("安装完成！", false);
+            }
+            catch (Exception ex)
+            {
+                SetStatus("安装时发生异常，请重试：" + ex.Message, false);
+                UpdateBtn.Visibility = Visibility.Visible;
+            }
+        }
+
+
+        private bool IsAdmin()
+        {
+            // 检查当前用户是否具有管理员权限
+            WindowsIdentity identity = WindowsIdentity.GetCurrent();
+            WindowsPrincipal principal = new WindowsPrincipal(identity);
+            return principal.IsInRole(WindowsBuiltInRole.Administrator);
+        }
+
+        private void RunAsAdmin()
+        {
+            // 启动当前应用程序以管理员权限重新运行
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = Assembly.GetEntryAssembly().Location,
+                UseShellExecute = true,
+                Verb = "runas"
+            };
+
+            try
+            {
+                Process.Start(startInfo);
+                Application.Current.Shutdown();
+            }
+            catch (Exception ex)
+            {
+                SetStatus("无法提升权限：" + ex.Message, false);
+                UpdateBtn.Visibility = Visibility.Visible;
+            }
+        }
+
 
 
         private async void Check()
@@ -187,8 +222,8 @@ namespace Updater
                     NewVersionSP.Visibility = Visibility.Visible;
                     Version.Text = info.Version;
                     VersionTitle.Text = info.Title;
-                    NewVersionZipURL = info.DownloadUrl;
-                    NewVersionURL = info.HtmlUrl;
+                    NewVersionFileURL = info.DownloadUrl;
+                    NewVersionPageURL = info.HtmlUrl;
                     if (info.IsPre)
                     {
                         PreTag.Visibility = Visibility.Visible;
@@ -234,7 +269,7 @@ namespace Updater
 
         private void Hyperlink_Click(object sender, RoutedEventArgs e)
         {
-            Process.Start(new ProcessStartInfo(NewVersionURL));
+            Process.Start(new ProcessStartInfo(NewVersionPageURL));
         }
     }
 }
