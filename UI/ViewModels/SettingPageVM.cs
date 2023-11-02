@@ -54,13 +54,14 @@ namespace UI.ViewModels
             try
             {
                 CheckUpdateBtnVisibility = System.Windows.Visibility.Collapsed;
-                string updaterExePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory,
-                    "Updater.exe");
-                string updaterCacheExePath = Path.Combine(
-                    AppDomain.CurrentDomain.BaseDirectory,
-                    "Update",
-                    "Updater.exe");
-                string updateDirPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Update");
+
+                string appInstallDirectory = AppDomain.CurrentDomain.BaseDirectory;
+
+                // 更新程序的相对路径
+                string updaterExePath = Path.Combine(appInstallDirectory, "Updater.exe");
+                string updaterCacheExePath = Path.Combine(appInstallDirectory, "Update", "Updater.exe");
+                string updateDirPath = Path.Combine(appInstallDirectory, "Update");
+
                 if (!Directory.Exists(updateDirPath))
                 {
                     Directory.CreateDirectory(updateDirPath);
@@ -71,14 +72,12 @@ namespace UI.ViewModels
                     mainVM.Toast("升级程序似乎已被删除，请手动前往发布页查看新版本", Controls.Window.ToastType.Error, Controls.Base.IconTypes.None);
                     return;
                 }
+
                 File.Copy(updaterExePath, updaterCacheExePath, true);
+                File.Copy(Path.Combine(appInstallDirectory, "Newtonsoft.Json.dll"), Path.Combine(appInstallDirectory, "Update", "Newtonsoft.Json.dll"), true);
 
-                File.Copy(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Newtonsoft.Json.dll"), Path.Combine(
-                    AppDomain.CurrentDomain.BaseDirectory,
-                    "Update",
-                    "Newtonsoft.Json.dll"), true);
-
-                ProcessHelper.Run(updaterCacheExePath, new string[] { Version });
+                // 使用相对路径启动Updater.exe
+                ProcessHelper.Run(Path.Combine(appInstallDirectory, "Update", "Updater.exe"), new string[] { Version });
             }
             catch (Exception ex)
             {
@@ -88,6 +87,7 @@ namespace UI.ViewModels
                 mainVM.Toast("无法正确启动检查更新程序", Controls.Window.ToastType.Error, Controls.Base.IconTypes.None);
             }
         }
+
 
         private void OnOpenURL(object obj)
         {
