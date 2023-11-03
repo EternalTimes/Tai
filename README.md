@@ -14,10 +14,11 @@
 #### 使用
 
 1. 在 [releases](https://github.com/EternalTimes/Tai/releases) 中可以下载已经编译好的 UWP 可执行文件压缩包。请选择标记有 `Latest` 的版本，划到下方的 `Assets` 找到 `Tai_x.x.x.x-UWP.zip` 点击即可下载；
+   **P.S. 如果已经安装过UWP版，可以直接下载`Tai - x.x.x.x - AnyCPU.msixbundle`**
 
-2. 下载压缩包后解压到合适的位置
+3. 下载压缩包后解压到合适的位置
 
-3. 进入解压后的文件夹内，找到 `Install.ps1` ，右键，选择`使用PowerShell运行`（可能需要管理员权限）
+4. 进入解压后的文件夹内，找到 `Install.ps1` ，右键，选择`使用PowerShell运行`（可能需要管理员权限）
 
 > P.S. 如果以前安装过我打包的Tai，可直接双击msixbundle安装
 
