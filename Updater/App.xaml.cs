@@ -20,8 +20,7 @@ namespace Updater
             base.OnStartup(e);
             //  阻止多开和用户主动启动
 
-            // 源代码：if (e.Args.Length == 0 || IsRuned())
-            if (IsRuned())
+            if (e.Args.Length == 0 || IsRuned())
             {
                 Shutdown();
             }

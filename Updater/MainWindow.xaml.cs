@@ -107,9 +107,8 @@ namespace Updater
                         osize = st.Read(by, 0, (int)by.Length);
 
                         //进度计算
-                        double process = double.Parse(String.Format("{0:F}",
-                                ((double)totalDownloadedByte / (double)totalBytes * 100)));
-                        mainModel.ProcessValue = process;
+                        double process = double.Parse(String.Format("{0:F}",((double)totalDownloadedByte / (double)totalBytes * 100)));
+                        Dispatcher.Invoke(() => { ProgressBar.Value = process; });
                         //Debug.WriteLine(ProcessValue);
                     }
                     // 关闭资源
@@ -127,15 +126,16 @@ namespace Updater
 
             if (res)
             {
-                // 检查管理员权限
-                if (IsAdmin())
+                // 打开下载的文件
+                string filePath = System.IO.Path.Combine(SaveDir, SaveName);
+                try
                 {
-                    InstallUpdate();
+                    Process.Start(filePath);
+                    SetStatus("安装完成！", false);
                 }
-                else
+                catch (Exception ex)
                 {
-                    // 提升权限到管理员权限
-                    RunAsAdmin();
+                    SetStatus("无法打开下载的文件：" + ex.Message, false);
                 }
             }
             else
@@ -145,62 +145,6 @@ namespace Updater
                 UpdateBtn.Visibility = Visibility.Visible;
             }
         }
-
-        private void InstallUpdate()
-        {
-            string msixPath = System.IO.Path.Combine(SaveDir, SaveName);
-
-            // 启动 MSIX 安装程序
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = msixPath,
-                UseShellExecute = true
-            };
-
-            try
-            {
-                Process.Start(startInfo);
-                SetStatus("安装完成！", false);
-            }
-            catch (Exception ex)
-            {
-                SetStatus("安装时发生异常，请重试：" + ex.Message, false);
-                UpdateBtn.Visibility = Visibility.Visible;
-            }
-        }
-
-
-        private bool IsAdmin()
-        {
-            // 检查当前用户是否具有管理员权限
-            WindowsIdentity identity = WindowsIdentity.GetCurrent();
-            WindowsPrincipal principal = new WindowsPrincipal(identity);
-            return principal.IsInRole(WindowsBuiltInRole.Administrator);
-        }
-
-        private void RunAsAdmin()
-        {
-            // 启动当前应用程序以管理员权限重新运行
-            var startInfo = new ProcessStartInfo
-            {
-                FileName = Assembly.GetEntryAssembly().Location,
-                UseShellExecute = true,
-                Verb = "runas"
-            };
-
-            try
-            {
-                Process.Start(startInfo);
-                Application.Current.Shutdown();
-            }
-            catch (Exception ex)
-            {
-                SetStatus("无法提升权限：" + ex.Message, false);
-                UpdateBtn.Visibility = Visibility.Visible;
-            }
-        }
-
-
 
         private async void Check()
         {

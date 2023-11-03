@@ -167,6 +167,5 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\UI\UI.csproj" />
-    <ProjectReference Include="..\Updater\Updater.csproj" />
   </ItemGroup>
 </Project>
