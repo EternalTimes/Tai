@@ -101,6 +101,10 @@
     <Compile Include="MainModel.cs" />
     <Compile Include="UINotifyPropertyChanged.cs" />
     <Compile Include="Unzip.cs" />
+    <Page Include="GlobalStyles.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
