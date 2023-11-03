@@ -27,10 +27,5 @@ namespace UI.Views
 
             DataContext = vm;
         }
-
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
     }
 }
