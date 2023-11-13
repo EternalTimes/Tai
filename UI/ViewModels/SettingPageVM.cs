@@ -59,8 +59,8 @@ namespace UI.ViewModels
 
                 // 更新程序的相对路径
                 string updaterExePath = Path.Combine(appInstallDirectory, "Updater.exe");
-                string updaterCacheExePath = Path.Combine(appInstallDirectory, "Update", "Updater.exe");
-                string updateDirPath = Path.Combine(appInstallDirectory, "Update");
+                string updaterCacheExePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Tai", "Update", "Updater.exe");
+                string updateDirPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Tai", "Update");
 
                 if (!Directory.Exists(updateDirPath))
                 {
@@ -74,10 +74,10 @@ namespace UI.ViewModels
                 }
 
                 File.Copy(updaterExePath, updaterCacheExePath, true);
-                File.Copy(Path.Combine(appInstallDirectory, "Newtonsoft.Json.dll"), Path.Combine(appInstallDirectory, "Update", "Newtonsoft.Json.dll"), true);
+                File.Copy(Path.Combine(appInstallDirectory, "Newtonsoft.Json.dll"), Path.Combine(updateDirPath, "Newtonsoft.Json.dll"), true);
 
                 // 使用相对路径启动Updater.exe
-                ProcessHelper.Run(Path.Combine(appInstallDirectory, "Update", "Updater.exe"), new string[] { Version });
+                ProcessHelper.Run(Path.Combine(updateDirPath, "Updater.exe"), new string[] { Version });
             }
             catch (Exception ex)
             {
