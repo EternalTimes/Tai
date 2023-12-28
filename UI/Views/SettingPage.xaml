@@ -81,7 +81,7 @@
                             <TextBlock VerticalAlignment="Center">
                                 <Run Text="Tai 版本号 "/><Run Text="{Binding Version}"/>
                             </TextBlock>
-                            <Btn:Button Visibility="{Binding CheckUpdateBtnVisibility}" Command="{Binding CheckUpdate}" Margin="20,0,0,0" VerticalAlignment="Center" Width="120" Icon="SetlockScreen" Content="检查更新"/>
+                            <Btn:Button Visibility="{Binding CheckUpdateBtnVisibility}" Command="{Binding CheckUpdate}" Margin="20,0,0,0" VerticalAlignment="Center" Width="100" Icon="SetlockScreen" Content="检查更新" FontWeight="Bold" Background="#CCFF5F5F"/>
                         </StackPanel>
                         <TextBlock Margin="0,30,0,0">
                                 <Hyperlink Command="{Binding OpenURL}" CommandParameter="https://github.com/Planshit/Tai/discussions/279">浏览器统计插件</Hyperlink>
@@ -92,7 +92,13 @@
                         <TextBlock Margin="0,5,0,0">
                                 <Run Text="讨论 "/><Hyperlink Command="{Binding OpenURL}" CommandParameter="https://github.com/Planshit/Tai/discussions">https://github.com/Planshit/Tai/discussions</Hyperlink>
                         </TextBlock>
-                        
+                        <TextBlock Margin="0,15,0,0" Foreground="#CCFF5F5F" FontStyle="Italic" FontSize="14">
+                            <Run Text="打包为UWP并修改 " />
+                            <Hyperlink Command="{Binding OpenURL}" CommandParameter="https://github.com/EternalTimes/Tai/tree/pack">
+                                <Run Text="https://github.com/EternalTimes/Tai/tree/pack" />
+                            </Hyperlink>
+                        </TextBlock>
+
                         <TextBlock Margin="0,10,0,0">
                                 <Run Text="外部资源声明 "/>
                         </TextBlock>
